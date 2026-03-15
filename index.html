@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LBC // Staff Assessment Tool</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <style>
+        :root {
+            --ui-blue: #2563eb;
+            --ui-blue-hover: #1d4ed8;
+            --ui-bg: #f8fafc;
+            --ui-card-border: #e2e8f0;
+            --ui-text-main: #0f172a;
+            --ui-text-secondary: #64748b;
+            --ui-success: #10b981;
+            --ui-error: #ef4444;
+        }
+
+        body {
+            background-color: var(--ui-bg);
+            color: var(--ui-text-main);
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Navbar */
+        .office-nav {
+            background: white;
+            border-bottom: 1px solid var(--ui-card-border);
+            padding: 0.75rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            height: 6px;
+            background: #f1f5f9;
+            width: 100%;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--ui-blue);
+            transition: width 0.5s ease;
+        }
+
+        /* Cards */
+        .office-card {
+            background: white;
+            border: 1px solid var(--ui-card-border);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Inputs & Options */
+        .office-input {
+            border: 1px solid var(--ui-card-border);
+            border-radius: 6px;
+            padding: 0.6rem 1rem;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .office-input:focus {
+            border-color: var(--ui-blue);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid var(--ui-card-border);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        .option-item:hover {
+            border-color: #cbd5e1;
+            background: #f1f5f9;
+        }
+        .option-item.active {
+            border-color: var(--ui-blue);
+            background: rgba(37, 99, 235, 0.03);
+            box-shadow: inset 0 0 0 1px var(--ui-blue);
+        }
+
+        .radio-circle {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #cbd5e1;
+            border-radius: 50%;
+            margin-right: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .active .radio-circle {
+            border-color: var(--ui-blue);
+        }
+        .active .radio-circle::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--ui-blue);
+            border-radius: 50%;
+        }
+
+        /* Buttons */
+        .btn-office-primary {
+            background: var(--ui-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn-office-primary:hover {
+            background: var(--ui-blue-hover);
+        }
+        .btn-office-primary:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+        /* Animation */
+        .v-fade-enter-active, .v-fade-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
+        .v-fade-enter-from, .v-fade-leave-to { opacity: 0; transform: translateY(10px); }
+
+        [v-cloak] { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="app" v-cloak>
+    <nav class="office-nav">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <i data-lucide="shield-check" class="text-primary"></i>
+                <span class="fw-bold fs-5">LBC Assessment</span>
+            </div>
+            <div class="d-flex align-items-center gap-3 text-secondary">
+                <span class="small" v-if="started && !submitted">
+                    <i data-lucide="user" class="d-inline-block" style="width: 14px"></i> {{ username }}
+                </span>
+                <span class="small border-start ps-3">Terminal 2.4</span>
+            </div>
+        </div>
+        <div class="progress-container mt-2" v-if="started && !submitted">
+            <div class="progress-bar-fill" :style="{ width: progress + '%' }"></div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <transition name="v-fade" mode="out-in">
+            
+            <div v-if="!started" key="login" class="row justify-content-center">
+                <div class="col-md-5">
+                    <div class="office-card text-center">
+                        <h3 class="fw-bold mb-2">Авторизация сотрудника</h3>
+                        <p class="text-secondary mb-4">Для начала теста введите ваш идентификатор</p>
+                        
+                        <div class="text-start mb-4">
+                            <label class="small fw-semibold mb-1">Telegram ID / Username</label>
+                            <input type="text" v-model="username" class="office-input" placeholder="например, @ivan_lbc">
+                        </div>
+                        
+                        <button class="btn-office-primary w-100 d-flex align-items-center justify-content-center gap-2" 
+                                :disabled="username.length < 3" 
+                                @click="startTest">
+                            Начать тестирование <i data-lucide="arrow-right" style="width: 18px"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div v-else-if="!submitted" key="quiz" class="row justify-content-center">
+                <div class="col-lg-7">
+                    <div v-for="(q, idx) in questions" :key="idx" class="office-card">
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="badge bg-light text-primary border px-2 py-1">Вопрос {{ idx + 1 }}</span>
+                            <span class="small text-secondary" v-if="q.userAnswerIndex !== null">
+                                <i data-lucide="check-circle-2" class="text-success" style="width: 16px"></i> Сохранено
+                            </span>
+                        </div>
+                        
+                        <h5 class="fw-bold mb-4">{{ q.text }}</h5>
+                        
+                        <div class="options-list">
+                            <div v-for="(opt, oIdx) in q.options" 
+                                 :key="oIdx" 
+                                 class="option-item" 
+                                 :class="{ active: q.userAnswerIndex === oIdx }"
+                                 @click="selectOption(idx, oIdx)">
+                                <div class="radio-circle"></div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-medium">{{ opt.text }}</div>
+                                    <div class="small text-secondary" v-if="opt.desc">{{ opt.desc }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="office-card bg-light border-dashed text-center">
+                        <p class="text-secondary small mb-3">Убедитесь, что все поля заполнены верно. После отправки результат изменить нельзя.</p>
+                        <button class="btn-office-primary px-5" @click="finish">
+                            Завершить и отправить результат
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div v-else key="result" class="row justify-content-center">
+                <div class="col-md-6 text-center">
+                    <div class="office-card">
+                        <div class="mb-4">
+                            <div class="display-4 fw-bold mb-1" :style="{ color: resColor }">{{ score }} / {{ questions.length }}</div>
+                            <div class="text-secondary fw-medium">Ваш итоговый балл</div>
+                        </div>
+
+                        <div class="py-4 border-top border-bottom mb-4">
+                            <h4 class="fw-bold mb-2" :style="{ color: resColor }">{{ resMsg }}</h4>
+                            <p class="text-secondary mb-0">Сотрудник: <strong>{{ username }}</strong></p>
+                        </div>
+
+                        <div class="row text-start g-3 mb-4">
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded">
+                                    <div class="small text-secondary">Верных ответов</div>
+                                    <div class="h5 fw-bold mb-0 text-success">{{ score }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded">
+                                    <div class="small text-secondary">Ошибок</div>
+                                    <div class="h5 fw-bold mb-0 text-danger">{{ questions.length - score }}</div>
+                                </div>
+                            </div>
+                        </div>
+                      <p>Скрин этого результата Тим-Лиду скинуть</p>
+                        <button class="btn btn-outline-secondary w-100" @click="restart">
+                            Вернуться в начало
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </transition>
+    </div>
+</div>
+
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                username: '',
+                started: false,
+                submitted: false,
+                questions: [
+                    { 
+                        text: "Как позиционируется направление Shop в рамках экосистемы?", 
+                        userAnswerIndex: null, 
+                        options: [
+                            { text: "Основной вектор работы", desc: "Главный источник трафика и прибыли", isCorrect: false },
+                            { text: "Вспомогательное направление", desc: "Дополнение к Escort-направлению для расширения чека", isCorrect: true }
+                        ] 
+                    },
+                    { 
+                        text: "В чем ключевое преимущество настройки 'Shop'?", 
+                        userAnswerIndex: null, 
+                        options: [
+                            { text: "Автоматизация наполнения", desc: "Гибкая настройка городов и ассортимента под запрос", isCorrect: true },
+                            { text: "Визуальное доверие", desc: "Более качественные фотографии товаров", isCorrect: false }
+                        ] 
+                    },
+                    { 
+                        text: "Каков целевой возрастной диапазон модели для конверсии?", 
+                        userAnswerIndex: null, 
+                        options: [
+                            { text: "Junior (18-19 лет)", desc: "Минимальный порог входа", isCorrect: false },
+                            { text: "Optimal (20-25 лет)", desc: "Наивысший уровень доверия и платежеспособности", isCorrect: true }
+                        ] 
+                    },
+                    { 
+                        text: "Политика безопасности: использование стоп-слов в профиле.", 
+                        userAnswerIndex: null, 
+                        options: [
+                            { text: "Прямое упоминание ПАВ", desc: "Строго запрещено алгоритмами мессенджеров", isCorrect: true },
+                            { text: "Использование спецсимволов", desc: "Допускается без ограничений", isCorrect: false }
+                        ] 
+                    },
+                    { 
+                        text: "Наиболее эффективный канал трафика для новых сотрудников:", 
+                        userAnswerIndex: null, 
+                        options: [
+                            { text: "Тематические Dating-боты TG", desc: "Прямой доступ к целевой аудитории", isCorrect: true },
+                            { text: "Внешние рекламные сети", desc: "Требуют больших вложений и тестов", isCorrect: false }
+                        ] 
+                    },
+                    { 
+                        text: "Стратегия коммуникации в первый день контакта:", 
+                        userAnswerIndex: null, 
+                        options: [
+                            { text: "Прямая продажа (Direct Sale)", desc: "Отправка ссылки в первом сообщении", isCorrect: false },
+                            { text: "Прогрев (Warm-up)", desc: "Установление контакта и фильтрация намерений", isCorrect: true }
+                        ] 
+                    },
+                    { 
+                        text: "Отработка возражения 'Почему ты не купишь сама?':", 
+                        userAnswerIndex: null, 
+                        options: [
+                            { text: "Лимиты и наличность", desc: "У меня только наличные, переведи на карту — я заберу", isCorrect: true },
+                            { text: "Технический сбой", desc: "Банковское приложение временно недоступно", isCorrect: false }
+                        ] 
+                    },
+                    { 
+                        text: "Действие при отказе мамонта ехать на локацию (клад):", 
+                        userAnswerIndex: null, 
+                        options: [
+                            { text: "Инициатива модели", desc: "Предложить забрать 'закладку' самостоятельно для него", isCorrect: true },
+                            { text: "Завершение диалога", desc: "Прекращение общения из-за неликвидности", isCorrect: false }
+                        ] 
+                    },
+                    { 
+                        text: "Основная функция технической поддержки (Support):", 
+                        userAnswerIndex: null, 
+                        options: [
+                            { text: "Retention (Удержание)", desc: "Стимуляция на повторные транзакции и дожимы", isCorrect: true },
+                            { text: "Информирование", desc: "Простая выдача координат локации", isCorrect: false }
+                        ] 
+                    },
+                    { 
+                        text: "Инструменты верификации реальности профиля:", 
+                        userAnswerIndex: null, 
+                        options: [
+                            { text: "Мультимедиа-контент", desc: "Использование живых ГС и видео-кружков", isCorrect: true },
+                            { text: "Фотоархив", desc: "Большое количество статичных изображений", isCorrect: false }
+                        ] 
+                    }
+                ]
+            }
+        },
+        computed: {
+            progress() {
+                const answered = this.questions.filter(q => q.userAnswerIndex !== null).length;
+                return (answered / this.questions.length) * 100;
+            },
+            score() {
+                return this.questions.reduce((acc, q) => {
+                    return acc + (q.userAnswerIndex !== null && q.options[q.userAnswerIndex].isCorrect ? 1 : 0);
+                }, 0);
+            },
+            resColor() {
+                if(this.score === 10) return '#10b981';
+                if(this.score >= 7) return '#f59e0b';
+                return '#ef4444';
+            },
+            resMsg() {
+                if(this.score === 10) return 'Квалификация подтверждена';
+                if(this.score >= 7) return 'Требуется доработка';
+                return 'Квалификация не пройдена';
+            }
+        },
+        methods: {
+            startTest() {
+                this.started = true;
+                this.$nextTick(() => lucide.createIcons());
+            },
+            selectOption(qIdx, oIdx) {
+                this.questions[qIdx].userAnswerIndex = oIdx;
+            },
+            finish() {
+                if (this.questions.some(q => q.userAnswerIndex === null)) {
+                    alert('Пожалуйста, ответьте на все вопросы.');
+                    return;
+                }
+                this.submitted = true;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+            restart() {
+                location.reload();
+            }
+        },
+        mounted() {
+            lucide.createIcons();
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
